@@ -1,0 +1,9 @@
+# Local eval / test scaffolding — not part of the deployed app
+eval/
+_script.js
+*.b64
+nul
+
+# Local source assets and test photos (kept out of the lean Vercel deploy)
+test images/
+Original Pictures and xlsx information/

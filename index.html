@@ -315,30 +315,41 @@ function buildPrompt(vig){
   }).join('\n');
   return `You are auditing a La-Z-Boy showroom living-room vignette called "${vig.name}".
 
-Below is the official checklist of items this vignette is supposed to contain. You are given two images: (1) the REFERENCE rendering of how this vignette should look, and (2) a PHOTO of the actual showroom floor to audit.
+You are given two images: (1) the REFERENCE rendering of how this vignette should look, and (2) a PHOTO of the actual showroom floor to audit. Below is the official checklist of items this vignette is supposed to contain.
 
 OFFICIAL CHECKLIST:
 ${lines}
+(Each line is "N. [Category] LABEL — quantity Q". Lines marked "(ALTERNATE ...)" are alternates.)
 
-Compare the floor photo against the checklist and reference. Sort every observation into exactly one of four buckets:
-- "correct": a checklist item that is present on the floor.
-- "missing": a checklist item that is NOT visible on the floor.
-- "wrong": a checklist item that appears to be present but the WRONG version (e.g. a different table shape/finish, a different rug, wrong art) \u2014 describe what's off.
-- "extra": something present on the floor that is NOT on the checklist at all.
+YOUR METHOD — visually ground EVERY judgment BEFORE you bucket it.
+Go down the checklist one line at a time. For EACH line, in this exact order, fill three things:
+  1. reference_shows: Look at the REFERENCE rendering and describe what it shows for THIS item — overall silhouette/shape, color, finish, material, and any distinctive feature. Be concrete and physical ("tall brushed-brass arc floor lamp, single white drum shade, round weighted base"), never generic ("a lamp"). If you cannot locate this item in the reference, write exactly "not locatable in reference".
+  2. floor_shows: Look at the FLOOR photo and describe what is actually at that spot the same way. If nothing matching is there, write exactly "absent".
+  3. Only AFTER writing both, apply the DECISION PROCEDURE below to choose a verdict.
+Do not choose a verdict before reference_shows and floor_shows are written. The mere presence of *an* object in the right category is NEVER, by itself, evidence of correctness — correct means the floor object matches the reference object's silhouette, finish, and proportion.
 
-Method — work through this before answering:
-- Go down the checklist item by item. For each, scan the floor photo and decide which bucket it belongs in. Then scan the floor photo for anything NOT on the checklist and bucket those as "extra".
-- Compare each present item against the REFERENCE rendering, not just the checklist text, so you catch wrong versions (different shape, finish, color, or style).
+SCOPE — audit ONLY this vignette's own staged grouping: the furniture set on its rug/footprint and the wall space and surfaces that are part of THIS staging. Objects in the distant background, on far showroom walls, or clearly belonging to a neighboring display are NOT part of this vignette — never use them to satisfy a checklist line, and do not stretch a loose style resemblance into a match. If a checklist item is represented only by such a distant/background object, floor_shows is "absent" and the verdict is "missing".
 
-Rules:
-- For ALTERNATE pairs, count the pair as one slot: if either alternate is present, mark the present one "correct" and do NOT mark its partner "missing".
-- RUG vs FLOOR: an "area rug" is a distinct textile laid ON TOP of the floor, with visible edges/borders where it stops and the floor (tile, wood, or wall-to-wall carpet) shows around it. Do NOT count the showroom's wall-to-wall carpet, the bare floor, or a floor that simply looks soft/textured as the rug. If you cannot see a discrete rug with edges sitting under or in front of the seating, the rug is "missing" — say so even if the floor is carpeted.
-- LAMPS and TABLES: check the actual fixture/piece, not just whether *a* lamp or *a* table is present. If a lamp or table is present but clearly a different style, shape, or finish than the reference, mark it "wrong" and describe the difference. Two lamps being present does not make them correct if they're the wrong lamps.
-- Be honest about uncertainty. You genuinely cannot distinguish near-identical SKUs from a photo; when two items are plausibly the same model and you're unsure, mark "correct" and add a short note flagging the uncertainty rather than guessing "wrong". Reserve "wrong" for items that are clearly different from the reference.
-- Judge framed wall art by count and rough style, not exact print.
+DECISION PROCEDURE — walk these steps IN ORDER and STOP at the first that fires:
+  1. Spot empty / no matching object on the floor -> verdict "missing".
+  2. SILHOUETTE differs — different overall shape or number of distinct masses (floor lamp vs table lamp; tripod vs single column; arc vs straight stick; round drum table vs rectangular console; loveseat vs 3-seat sofa; single frame vs triptych) -> verdict "wrong". STOP. You do NOT need to read a SKU to know a cone-shade tripod lamp is not a chrome arc lamp.
+  3. FINISH or COLOR FAMILY differs — brass vs matte black; light oak vs dark walnut; cream vs charcoal upholstery; glass top vs solid wood -> verdict "wrong". STOP. Do NOT count differences caused by lighting, white balance, shadow, or camera angle.
+  4. PROPORTION clearly differs though silhouette and finish match — squat-wide vs tall-narrow; low coffee table vs tall accent table -> verdict "wrong". STOP.
+  5. Silhouette, finish, AND proportion all agree, and the ONLY thing you cannot confirm is fine detail a photo genuinely cannot resolve (exact SKU, exact wood grain, exact fabric weave, exact printed image on art) -> verdict "correct", confidence "low" or "medium". THIS IS THE ONLY STEP where "when unsure, lean correct" applies. In the note, name the specific detail you could not confirm.
+  6. Coarse attributes agree and you can positively confirm the match -> verdict "correct", confidence "high".
 
-Respond with ONLY valid JSON, no markdown, no prose, in this exact shape:
-{"correct":[{"item":"...","note":""}],"missing":[{"item":"...","note":""}],"wrong":[{"item":"...","note":"what looks off"}],"extra":[{"item":"...","note":""}]}`;
+HARD RULE: "I can't identify the exact model from the photo" justifies leaning correct ONLY at step 5, and ONLY after steps 2-4 have all passed. A visible difference in silhouette, finish, or proportion makes the item "wrong" even if the exact SKU is unreadable. Two lamps being present does not make them correct if they are the wrong lamps.
+
+CATEGORY ANCHORS (apply WITHIN the procedure above):
+  - ALTERNATE pairs count as ONE checklist slot: emit one entry for the slot. If either alternate is present and matches, the slot is "correct"; it is "missing" only if NEITHER is present. Never mark one alternate "missing" because its partner is the one on the floor.
+  - RUG vs FLOOR: an area rug is a discrete textile laid ON TOP of the floor with visible edges/borders where it stops and the floor (tile, wood, or wall-to-wall carpet) shows around it. Do NOT count the showroom's wall-to-wall carpet, bare floor, or a floor that merely looks soft/textured as the rug. If you cannot see a discrete rug with edges under or in front of the seating, floor_shows is "absent" and the verdict is "missing" — even if the floor is carpeted.
+  - LAMPS and TABLES: judge the actual fixture/piece via steps 2-4 (silhouette, finish, proportion), not merely whether *a* lamp or table occupies the spot.
+  - WALL ART: judge by COUNT of pieces and gross style/orientation/silhouette (single vs multi-panel, portrait vs landscape, framed vs unframed), NOT the exact printed image. A different count or orientation is a SILHOUETTE difference -> "wrong". A different print at the same count and orientation is unresolvable fine detail -> step 5 -> "correct". Art hanging far in the background, on a distant wall, or on a neighboring display does NOT count toward this vignette — the pieces must be within this vignette's own staging.
+
+EXTRAS: after the checklist, scan the floor for any object that matches NO checklist line and record each in extras[].
+
+Return ONE entry per checklist line in items[] (in checklist order), each with reference_shows and floor_shows filled BEFORE the verdict, plus extras[]. Respond with ONLY valid JSON, no markdown, no prose, in this exact shape:
+{"items":[{"n":1,"label":"<verbatim checklist label>","category":"<category>","reference_shows":"<concrete description or 'not locatable in reference'>","floor_shows":"<concrete description or 'absent'>","verdict":"correct|missing|wrong","confidence":"high|medium|low","note":"<one sentence naming the specific visual difference or the unconfirmable detail>"}],"extras":[{"floor_shows":"<what it is>","note":"<why it is not on the checklist>"}]}`;
 }
 
 async function runAudit(){
@@ -375,7 +386,23 @@ async function runAudit(){
     try{parsed=JSON.parse(clean);}
     catch(e){const s=clean.indexOf('{'),en=clean.lastIndexOf('}');
       parsed=JSON.parse(clean.slice(s,en+1));}
-    renderReport(vig,parsed);
+    // New grounded schema -> re-derive the legacy {correct,missing,wrong,extra}
+    // buckets the report renderer expects. Falls back to the old shape if present.
+    let report=parsed;
+    if(parsed && Array.isArray(parsed.items)){
+      const toItem=e=>({item:(e.label||e.floor_shows||'item'),
+        note:[e.note,
+              (e.confidence&&e.confidence!=='high')?'(confidence: '+e.confidence+')':'',
+              (e.verdict==='wrong'&&e.floor_shows)?'on floor: '+e.floor_shows:''
+             ].filter(Boolean).join(' \u2014 ')});
+      report={
+        correct:parsed.items.filter(e=>e.verdict==='correct').map(toItem),
+        missing:parsed.items.filter(e=>e.verdict==='missing').map(toItem),
+        wrong:parsed.items.filter(e=>e.verdict==='wrong').map(toItem),
+        extra:(parsed.extras||[]).map(e=>({item:e.floor_shows||'(unidentified)',note:e.note||''}))
+      };
+    }
+    renderReport(vig,report);
   }catch(err){
     document.getElementById('errbox').innerHTML='<div class="err"><b>Couldn\u2019t complete the audit.</b><br>'+esc(err.message)+'</div>';
   }finally{
